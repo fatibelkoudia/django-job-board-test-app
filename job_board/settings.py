@@ -40,12 +40,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages',
     'home',  # Ajouter l'app home pour que Django trouve les templates
     'jobs',  # Ajouter l'app home pour que Django trouve les templates
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -124,14 +126,52 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+USE_AZURE_STORAGE = bool(
+    os.getenv('STORAGE_ACCOUNT_NAME') and os.getenv('STORAGE_ACCOUNT_KEY')
+)
+
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (User uploads - images, CVs, etc.)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+if USE_AZURE_STORAGE:
+    storage_account_name = os.getenv('STORAGE_ACCOUNT_NAME')
+    storage_account_key = os.getenv('STORAGE_ACCOUNT_KEY')
+    azure_domain = f'{storage_account_name}.blob.core.windows.net'
+
+    STATIC_URL = f'https://{azure_domain}/static/'
+    MEDIA_URL = f'https://{azure_domain}/media/'
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.azure_storage.AzureStorage',
+            'OPTIONS': {
+                'account_name': storage_account_name,
+                'account_key': storage_account_key,
+                'azure_container': 'media',
+                'expiration_secs': None,
+                'overwrite_files': True,
+            },
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
+else:
+    STORAGES = {
+        'default': {
+            'BACKEND': 'django.core.files.storage.FileSystemStorage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
+    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
