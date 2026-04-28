@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM node:20-alpine AS assets-builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
