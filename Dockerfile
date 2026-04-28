@@ -1,21 +1,30 @@
 FROM python:3.11
-
-# create app directory
-#RUN mkdir /app
 WORKDIR /app
 
-# upgrade pip
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY tailwind.config.js ./
+COPY static ./static
+COPY home ./home
+COPY jobs ./jobs
+
+RUN npm run build:css
+
+
+FROM python:3.11-slim
+WORKDIR /app
+
 RUN pip install --upgrade pip
 
-# copy requirements file
 COPY requirements.txt .
-
-
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+COPY --from=assets-builder /app/static/dist/output.css /app/static/dist/output.css
+
+RUN chmod +x /app/entrypoint.sh
 
 EXPOSE 8000
 
-#CMD ["sh", "-c", "python manage.py runserver 0.0.0.0:8000"]
-CMD ["sh", "-c", "gunicorn job_board.wsgi:application --bind 0.0.0.0:8000 --workers 2"]
+ENTRYPOINT ["/app/entrypoint.sh"]
