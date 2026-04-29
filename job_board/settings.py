@@ -26,10 +26,13 @@ SECRET_KEY = 'django-insecure-v++r+fn6w$j+yr3ye5+_qnqepn*h(n@i$-@hem%b=t3@4za%wp
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('APP_DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['127.0.0.1', os.getenv('APP_DOMAIN', 'localhost')]
+ALLOWED_HOSTS = os.getenv(
+    "ALLOWED_HOSTS",
+    "127.0.0.1,localhost"
+).split(",")
 
-#CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://*.azurecontainerapps.io', _app_domain_raw.rstrip('/')]
-CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://' + os.getenv('APP_DOMAIN', 'localhost')]
+# CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://'+ os.getenv('APP_DOMAIN','localhost')]
+CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://' + os.getenv('APP_DOMAIN', 'localhost'), 'https://*.azurecontainerapps.io']
 
 # Application definition
 
