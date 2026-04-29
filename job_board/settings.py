@@ -144,6 +144,9 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+if not (BASE_DIR / 'staticfiles').exists():
+    (BASE_DIR / 'staticfiles').mkdir(parents=True, exist_ok=True)
+
 STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
 STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
 AZURE_CONTAINER = "static"
