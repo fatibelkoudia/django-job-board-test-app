@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <a class="flex items-center space-x-4 cursor-pointer" href="{% if request.user.is_authenticated %}{% url 'jobs:index' %}{% else %}{% url 'home:index' %}{% endif %}">
             <div class="w-16 h-16 items-center justify-center overflow-hidden">
-                <img src="/media/logoWP.png" alt="Workaholic Place Logo" class="w-full h-full object-cover">
+                <img src="{{ MEDIA_URL }}logoWP.png" alt="Workaholic Place Logo" class="w-full h-full object-cover">
             </div>
             <div class="hidden sm:block text-2xl font-display text-slate-900 dark:text-white">
                 Workaholic Place
