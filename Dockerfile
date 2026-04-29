@@ -21,7 +21,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
-COPY --from=assets-builder /app/static/dist/output.css /app/static/dist/output.css
+COPY --from=assets-builder /app/static/dist/ /app/static/dist/
 
 RUN chmod +x /app/entrypoint.sh
 
