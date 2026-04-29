@@ -149,26 +149,33 @@ if not (BASE_DIR / 'staticfiles').exists():
 
 STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
 STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
-AZURE_CONTAINER = "static"
 
 if STORAGE_ACCOUNT_NAME and STORAGE_ACCOUNT_KEY:
-    STATIC_URL = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/"
+    STATIC_URL = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/static/"
+    MEDIA_URL = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/media/"
 
     STORAGES = {
         "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
+            "BACKEND": "storages.backends.azure_storage.AzureStorage",
+            "OPTIONS": {
+                "account_name": STORAGE_ACCOUNT_NAME,
+                "account_key": STORAGE_ACCOUNT_KEY,
+                "azure_container": "media",
+            },
         },
         "staticfiles": {
             "BACKEND": "storages.backends.azure_storage.AzureStorage",
             "OPTIONS": {
                 "account_name": STORAGE_ACCOUNT_NAME,
                 "account_key": STORAGE_ACCOUNT_KEY,
-                "azure_container": AZURE_CONTAINER,
+                "azure_container": "static",
             },
         },
     }
 else:
     STATIC_URL = "/static/"
+    MEDIA_URL = "/media/"
+    MEDIA_ROOT = BASE_DIR / 'media'
 
     STORAGES = {
         "default": {
@@ -178,10 +185,6 @@ else:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-
-# Media files (User uploads - images, CVs, etc.)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
