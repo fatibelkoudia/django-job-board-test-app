@@ -21,18 +21,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v++r+fn6w$j+yr3ye5+_qnqepn*h(n@i$-@hem%b=t3@4za%wp'
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-v++r+fn6w$j+yr3ye5+_qnqepn*h(n@i$-@hem%b=t3@4za%wp"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('APP_DEBUG', 'False') == 'True'
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv(
     "ALLOWED_HOSTS",
     "127.0.0.1,localhost"
 ).split(",")
 
-# CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://'+ os.getenv('APP_DOMAIN','localhost')]
 CSRF_TRUSTED_ORIGINS = ['http://127.0.0.1', 'https://' + os.getenv('APP_DOMAIN', 'localhost'), 'https://*.azurecontainerapps.io']
+
+# Azure Proxy SSL Headers - CRITIQUE pour éviter les erreurs 504
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() == "true"
 
 # Application definition
 
@@ -84,15 +90,19 @@ WSGI_APPLICATION = 'job_board.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME', 'mydatabase'),
-        'USER': os.getenv('DB_USER', 'postgres'),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '5432'),
+    "default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("POSTGRES_DB"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "OPTIONS": {},
     }
 }
+
+if os.getenv("POSTGRES_SSLMODE"):
+    DATABASES["default"]["OPTIONS"]["sslmode"] = os.getenv("POSTGRES_SSLMODE")
 
 
 # Password validation
@@ -128,53 +138,47 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-USE_AZURE_STORAGE = bool(
-    os.getenv('STORAGE_ACCOUNT_NAME') and os.getenv('STORAGE_ACCOUNT_KEY')
-)
-
-STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
+
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
+STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
+AZURE_CONTAINER = "static"
+
+if STORAGE_ACCOUNT_NAME and STORAGE_ACCOUNT_KEY:
+    STATIC_URL = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/{AZURE_CONTAINER}/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "storages.backends.azure_storage.AzureStorage",
+            "OPTIONS": {
+                "account_name": STORAGE_ACCOUNT_NAME,
+                "account_key": STORAGE_ACCOUNT_KEY,
+                "azure_container": AZURE_CONTAINER,
+            },
+        },
+    }
+else:
+    STATIC_URL = "/static/"
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
 
 # Media files (User uploads - images, CVs, etc.)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-if USE_AZURE_STORAGE:
-    storage_account_name = os.getenv('STORAGE_ACCOUNT_NAME')
-    storage_account_key = os.getenv('STORAGE_ACCOUNT_KEY')
-    azure_domain = f'{storage_account_name}.blob.core.windows.net'
-
-    STATIC_URL = f'https://{azure_domain}/static/'
-    MEDIA_URL = f'https://{azure_domain}/media/'
-
-    STORAGES = {
-        'default': {
-            'BACKEND': 'storages.backends.azure_storage.AzureStorage',
-            'OPTIONS': {
-                'account_name': storage_account_name,
-                'account_key': storage_account_key,
-                'azure_container': 'media',
-                'expiration_secs': None,
-                'overwrite_files': True,
-            },
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-        },
-    }
-else:
-    STORAGES = {
-        'default': {
-            'BACKEND': 'django.core.files.storage.FileSystemStorage',
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-        },
-    }
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
